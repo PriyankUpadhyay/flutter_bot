@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'colors.dart';
 
@@ -37,6 +38,20 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _textEditingController = TextEditingController();
   bool _isComposingMessage = false;
+  List<Widget> bubbles = [];
+  List<Message> msgs = [
+    Message("Hey there.", "11:00", true, true),
+    Message("Hi. How may I help?", "11:01", true, false),
+    Message("Can you tell me about Yellow Messenger?", "11:01", true, true),
+    Message("Sure thing.", "11:02", true, false, MessageFormats.Suggestions),
+    Message("images/mission.jpg", "11:02", true, false, MessageFormats.Image),
+    Message(
+        "Yellow Messenger is a leading omnichannel conversational AI tool that helps more than 100 top brands to offer personalised customer service at scale and drive growth.",
+        "11:02",
+        true,
+        false),
+    Message("Thanks.", "11:03", false, true),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -77,28 +92,22 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _chatBubbles() {
+
+    //Creating chat bubbles
+    setState(() {
+      if(bubbles.length<1)
+      for (Message msg in msgs){
+        bubbles.add(Bubble(msg));
+     }
+    });
+    
     return ListView(
         padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-        //color: PrimaryAccentColor,
         children: <Widget>[
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Bubble(Message("Hey there.", "11:00", true, true)),
-              Bubble(Message("Hi. How may I help?", "11:01", true, false)),
-              Bubble(Message("Can you tell me about Yellow Messenger?", "11:01",
-                  true, true)),
-              Bubble(Message("Sure thing.", "11:02", true, false,
-                  MessageFormats.Suggestions)),
-              Bubble(Message("images/mission.jpg", "11:02", true, false,
-                  MessageFormats.Image)),
-              Bubble(Message(
-                  "Yellow Messenger is a leading omnichannel conversational AI tool that helps more than 100 top brands to offer personalised customer service at scale and drive growth.",
-                  "11:02",
-                  true,
-                  false)),
-              Bubble(Message("Thanks.", "11:03", false, true)),
-            ],
+            children: bubbles
+            ,
           ),
         ]);
   }
@@ -160,7 +169,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Null> _textMessageSubmitted(String text) async {
-    print(_textEditingController.value);
+    print(_textEditingController.text);
+    DateTime now = DateTime.now();
+    setState(() {
+       bubbles.add(Bubble(Message(_textEditingController.text, DateFormat('kk:mm').format(now), true, true)));
+    });
     _textEditingController.clear();
 
     setState(() {
@@ -190,12 +203,12 @@ class Bubble extends StatelessWidget {
                 onPressed: () {},
                 shape: new RoundedRectangleBorder(
                     borderRadius: new BorderRadius.circular(30.0))),
-                     OutlineButton(
+            OutlineButton(
                 child: new Text("Suggestion 2"),
                 onPressed: () {},
                 shape: new RoundedRectangleBorder(
                     borderRadius: new BorderRadius.circular(30.0))),
-                     OutlineButton(
+            OutlineButton(
                 child: new Text("Suggestion 3"),
                 onPressed: () {},
                 shape: new RoundedRectangleBorder(
