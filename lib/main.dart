@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:image_picker/image_picker.dart';
 import 'package:speech_recognition/speech_recognition.dart';
 
 import 'colors.dart';
@@ -42,6 +43,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  File _image;
+
+
+  Future getImage() async {
+        try {
+        var image = await ImagePicker.pickImage(source: ImageSource.camera);
+        setState(() {
+      _image = image;
+      print("Image Selected.");
+    });
+      } catch (e) {
+        print(e);
+      }
+
+    
+  }
   ScrollController _scrollController = new ScrollController();
 
   final TextEditingController _textEditingController = TextEditingController();
@@ -171,7 +188,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   Icons.attach_file,
                   color: Colors.blueAccent,
                 ),
-                onPressed: null),
+                onPressed: getImage,
+                ),
           ),
           Flexible(
             child: TextField(
