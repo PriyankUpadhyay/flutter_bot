@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:speech_recognition/speech_recognition.dart';
+
+
 import 'colors.dart';
 
 void main() => runApp(MyApp());
@@ -15,6 +18,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Yellow Messenger',
+      //home: VoiceHome(),
       home: MyHomePage(),
     );
   }
@@ -39,6 +43,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
   final TextEditingController _textEditingController = TextEditingController();
   bool _isComposingMessage = false;
   List<Widget> bubbles = [];
@@ -56,6 +61,48 @@ class _MyHomePageState extends State<MyHomePage> {
         false),
     Message("Thanks.", "11:03", false, true),
   ];
+
+
+  SpeechRecognition _speechRecognition;
+  bool _isAvailable = false;
+  bool _isListening = false;
+
+  String resultText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    initSpeechRecognizer();
+  }
+
+  void initSpeechRecognizer() {
+    _speechRecognition = SpeechRecognition();
+
+    _speechRecognition.setAvailabilityHandler(
+      (bool result) => setState(() => _isAvailable = result),
+    );
+
+    _speechRecognition.setRecognitionStartedHandler(
+      () => setState(() => _isListening = true),
+    );
+
+    _speechRecognition.setRecognitionResultHandler(
+      (String speech) => setState(() =>  _textEditingController.text = speech),
+     // (String speech) => setState(() => resultText = speech),
+    );
+
+    _speechRecognition.setRecognitionCompleteHandler(
+      () => setState(() => _isListening = false),
+    );
+
+    _speechRecognition.activate().then(
+          (result) => setState(() => _isAvailable = result),
+        );
+  }
+
+
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -117,19 +164,19 @@ class _MyHomePageState extends State<MyHomePage> {
   Container _messageEditor() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      child: new Row(
+      child:  Row(
         children: <Widget>[
-          new Container(
-            margin: new EdgeInsets.symmetric(horizontal: 4.0),
-            child: new IconButton(
-                icon: new Icon(
+           Container(
+            margin:  EdgeInsets.symmetric(horizontal: 4.0),
+            child:  IconButton(
+                icon:  Icon(
                   Icons.attach_file,
                   color: Colors.blueAccent,
                 ),
                 onPressed: null),
           ),
-          new Flexible(
-            child: new TextField(
+           Flexible(
+            child:  TextField(
               controller: _textEditingController,
               onChanged: (String messageText) {
                 setState(() {
@@ -138,13 +185,14 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               onSubmitted: null,
               decoration:
-                  new InputDecoration.collapsed(hintText: "Send a message"),
+                   InputDecoration.collapsed(hintText: "Send a message"),
             ),
           ),
-          new Container(
+           Container(
             margin: const EdgeInsets.symmetric(horizontal: 4.0),
             child: _getDefaultSendButton(),
           ),
+          
         ],
       ),
     );
@@ -152,18 +200,27 @@ class _MyHomePageState extends State<MyHomePage> {
 
   RaisedButton _getDefaultSendButton() {
     return RaisedButton(
-      disabledColor: YellowColor,
-      disabledElevation: 0,
-      color: YellowColor,
+      //disabledColor: YellowColor,
+      //disabledElevation: 0,
+      color: _isComposingMessage?  YellowColor : PrimaryAccentColor ,
       shape: CircleBorder(),
       onPressed: _isComposingMessage
           ? () => _textMessageSubmitted(_textEditingController.text)
-          : null,
+          : () {
+                    if (_isAvailable && !_isListening)
+                      _speechRecognition
+                          .listen(locale: "en_US")
+                          .then((result) {
+                            print('I am here: $resultText');
+                            _textEditingController.text = resultText;
+                            _isComposingMessage = true;
+                          } );
+                  },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Icon(
-          Icons.send,
-          color: _isComposingMessage ? TextColorLight : Colors.white54,
+          _isComposingMessage ? Icons.send : Icons.mic,
+          color: TextColorLight,
           size: 30.0,
         ),
       ),
@@ -171,14 +228,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Null> _textMessageSubmitted(String text) async {
-    print(_textEditingController.text);
+    //print(_textEditingController.text);
     DateTime now = DateTime.now();
     setState(() {
       bubbles.add(Bubble(Message(_textEditingController.text,
           DateFormat('kk:mm').format(now), true, true)));
     });
     getJoke().then((value){
-      print(value["value"]["joke"]);
+      //print(value["value"]["joke"]);
       setState(() {
       bubbles.add(Bubble(Message(value["value"]["joke"],
           DateFormat('kk:mm').format(now), true, false)));
@@ -245,7 +302,7 @@ class Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(msg.format);
+    //print(msg.format);
     final bg = msg.isMe ? Colors.yellowAccent.shade100 : Colors.white;
     final align = msg.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final icon = msg.delivered ? Icons.done_all : Icons.done;
