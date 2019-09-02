@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 import 'colors.dart';
 
@@ -41,9 +44,10 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Widget> bubbles = [];
   List<Message> msgs = [
     Message("Hey there.", "11:00", true, true),
-    Message("Hi. How may I help?", "11:01", true, false),
+    Message("Hi. How may I help?", "11:01", true, false,
+        MessageFormats.Suggestions),
     Message("Can you tell me about Yellow Messenger?", "11:01", true, true),
-    Message("Sure thing.", "11:02", true, false, MessageFormats.Suggestions),
+    Message("Sure thing.", "11:02", true, false),
     Message("images/mission.jpg", "11:02", true, false, MessageFormats.Image),
     Message(
         "Yellow Messenger is a leading omnichannel conversational AI tool that helps more than 100 top brands to offer personalised customer service at scale and drive growth.",
@@ -92,22 +96,20 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _chatBubbles() {
-
     //Creating chat bubbles
     setState(() {
-      if(bubbles.length<1)
-      for (Message msg in msgs){
-        bubbles.add(Bubble(msg));
-     }
+      if (bubbles.length < 1)
+        for (Message msg in msgs) {
+          bubbles.add(Bubble(msg));
+        }
     });
-    
+
     return ListView(
         padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
         children: <Widget>[
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: bubbles
-            ,
+            children: bubbles,
           ),
         ]);
   }
@@ -172,8 +174,20 @@ class _MyHomePageState extends State<MyHomePage> {
     print(_textEditingController.text);
     DateTime now = DateTime.now();
     setState(() {
-       bubbles.add(Bubble(Message(_textEditingController.text, DateFormat('kk:mm').format(now), true, true)));
+      bubbles.add(Bubble(Message(_textEditingController.text,
+          DateFormat('kk:mm').format(now), true, true)));
     });
+    getJoke().then((value){
+      print(value["value"]["joke"]);
+      setState(() {
+      bubbles.add(Bubble(Message(value["value"]["joke"],
+          DateFormat('kk:mm').format(now), true, false)));
+    });
+    }).catchError((error){
+      print(error);
+    });
+
+
     _textEditingController.clear();
 
     setState(() {
@@ -198,6 +212,7 @@ class Bubble extends StatelessWidget {
       case MessageFormats.Suggestions:
         childElement = Column(
           children: <Widget>[
+            Text(msg.message),
             OutlineButton(
                 child: new Text("Suggestion 1"),
                 onPressed: () {},
@@ -295,4 +310,11 @@ class Bubble extends StatelessWidget {
       ],
     );
   }
+}
+
+Future<dynamic> getJoke() async {
+  final baseUrl = "http://api.icndb.com/jokes/random";
+  http.Response response = await http.get(Uri.parse(baseUrl));
+  var data = json.decode(response.body);
+  return data;
 }
