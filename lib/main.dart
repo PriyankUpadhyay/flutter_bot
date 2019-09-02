@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 
 import 'package:speech_recognition/speech_recognition.dart';
 
-
 import 'colors.dart';
 
 void main() => runApp(MyApp());
@@ -43,6 +42,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  ScrollController _scrollController = new ScrollController();
 
   final TextEditingController _textEditingController = TextEditingController();
   bool _isComposingMessage = false;
@@ -61,7 +61,6 @@ class _MyHomePageState extends State<MyHomePage> {
         false),
     Message("Thanks.", "11:03", false, true),
   ];
-
 
   SpeechRecognition _speechRecognition;
   bool _isAvailable = false;
@@ -87,8 +86,8 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     _speechRecognition.setRecognitionResultHandler(
-      (String speech) => setState(() =>  _textEditingController.text = speech),
-     // (String speech) => setState(() => resultText = speech),
+      (String speech) => setState(() => _textEditingController.text = speech),
+      // (String speech) => setState(() => resultText = speech),
     );
 
     _speechRecognition.setRecognitionCompleteHandler(
@@ -99,10 +98,6 @@ class _MyHomePageState extends State<MyHomePage> {
           (result) => setState(() => _isAvailable = result),
         );
   }
-
-
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     return ListView(
+        controller: _scrollController,
+        reverse: true,
+        shrinkWrap: true,
         padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
         children: <Widget>[
           Column(
@@ -164,19 +162,19 @@ class _MyHomePageState extends State<MyHomePage> {
   Container _messageEditor() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      child:  Row(
+      child: Row(
         children: <Widget>[
-           Container(
-            margin:  EdgeInsets.symmetric(horizontal: 4.0),
-            child:  IconButton(
-                icon:  Icon(
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 4.0),
+            child: IconButton(
+                icon: Icon(
                   Icons.attach_file,
                   color: Colors.blueAccent,
                 ),
                 onPressed: null),
           ),
-           Flexible(
-            child:  TextField(
+          Flexible(
+            child: TextField(
               controller: _textEditingController,
               onChanged: (String messageText) {
                 setState(() {
@@ -184,15 +182,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 });
               },
               onSubmitted: null,
-              decoration:
-                   InputDecoration.collapsed(hintText: "Send a message"),
+              decoration: InputDecoration.collapsed(hintText: "Send a message"),
             ),
           ),
-           Container(
+          Container(
             margin: const EdgeInsets.symmetric(horizontal: 4.0),
             child: _getDefaultSendButton(),
           ),
-          
         ],
       ),
     );
@@ -202,20 +198,18 @@ class _MyHomePageState extends State<MyHomePage> {
     return RaisedButton(
       //disabledColor: YellowColor,
       //disabledElevation: 0,
-      color: _isComposingMessage?  YellowColor : PrimaryAccentColor ,
+      color: _isComposingMessage ? YellowColor : PrimaryAccentColor,
       shape: CircleBorder(),
       onPressed: _isComposingMessage
           ? () => _textMessageSubmitted(_textEditingController.text)
           : () {
-                    if (_isAvailable && !_isListening)
-                      _speechRecognition
-                          .listen(locale: "en_US")
-                          .then((result) {
-                            print('I am here: $resultText');
-                            _textEditingController.text = resultText;
-                            _isComposingMessage = true;
-                          } );
-                  },
+              if (_isAvailable && !_isListening)
+                _speechRecognition.listen(locale: "en_US").then((result) {
+                  print('I am here: $resultText');
+                  _textEditingController.text = resultText;
+                  _isComposingMessage = true;
+                });
+            },
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Icon(
@@ -234,16 +228,20 @@ class _MyHomePageState extends State<MyHomePage> {
       bubbles.add(Bubble(Message(_textEditingController.text,
           DateFormat('kk:mm').format(now), true, true)));
     });
-    getJoke().then((value){
+    getJoke().then((value) {
       //print(value["value"]["joke"]);
       setState(() {
-      bubbles.add(Bubble(Message(value["value"]["joke"],
-          DateFormat('kk:mm').format(now), true, false)));
-    });
-    }).catchError((error){
+        bubbles.add(Bubble(Message(value["value"]["joke"],
+            DateFormat('kk:mm').format(now), true, false)));
+      });
+      _scrollController.animateTo(
+            0.0,
+            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 300),
+          );
+    }).catchError((error) {
       print(error);
     });
-
 
     _textEditingController.clear();
 
